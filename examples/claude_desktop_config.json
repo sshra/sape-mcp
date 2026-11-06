@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "sape": {
+      "command": "sape-mcp",
+      "env": {
+        "SAPE_LOGIN": "your_login",
+        "SAPE_TOKEN": "your_token"
+      }
+    }
+  }
+}
