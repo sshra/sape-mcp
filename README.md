@@ -35,9 +35,33 @@ pip install .
 | `SAPE_API_URL` | нет | `https://api.sape.ru/xmlrpc/` | адрес API |
 | `SAPE_MAX_CALLS_PER_MINUTE` | нет | `115` | троттлинг запросов |
 
-## Подключение к клиенту
+## Подключение к агенту
 
-### Claude Desktop / любой MCP-клиент (stdio)
+Два способа — выберите один.
+
+### Вариант A: удалённый MCP-сервер (рекомендуется, сервер живёт в Docker)
+
+Поднимите контейнер (см. раздел «Запуск в Docker» ниже), затем подключите endpoint `http://<host>:8080/mcp`.
+
+Клиенты с поддержкой удалённых MCP (Claude Desktop «Add custom connector», Cursor, Cline и др.):
+
+```json
+{
+  "mcpServers": {
+    "sape": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
+```
+
+Плюсы: один постоянный процесс, одна cookie-сессия к API, честный rate-limit, обновление сервера без правки конфигов агентов.
+
+### Вариант B: локальный stdio (сервер запускается клиентом)
+
+Требуется установленный пакет: `pip install sape-mcp` (после публикации на PyPI) или `pip install git+https://github.com/sshra/sape-mcp.git`.
+
+Универсальный формат (Claude Desktop, Cursor, Cline, большинство MCP-клиентов):
 
 ```json
 {
@@ -53,18 +77,56 @@ pip install .
 }
 ```
 
+Если `sape-mcp` не в PATH — укажите полный путь (`C:\\Python313\\Scripts\\sape-mcp.exe`) или запускайте через Python:
+
+```json
+{
+  "mcpServers": {
+    "sape": {
+      "command": "python",
+      "args": ["-m", "sape_mcp"],
+      "env": { "SAPE_LOGIN": "...", "SAPE_TOKEN": "..." }
+    }
+  }
+}
+```
+
+Для stdio-клиентов доступен и гибрид: клиент сам поднимает контейнер на сессию:
+
+```json
+{
+  "mcpServers": {
+    "sape": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "--env-file", "/абсолютный/путь/.env", "sape-mcp"],
+      "env": { "SAPE_TRANSPORT": "stdio" }
+    }
+  }
+}
+```
+
+(образ собирается один раз: `docker build -t sape-mcp https://github.com/sshra/sape-mcp.git#main:docker`)
+
+### Переменные окружения
+
+| Переменная | Обязательна | По умолчанию | Описание |
+|---|---|---|---|
+| `SAPE_LOGIN` | да | — | логин входа в sape.ru (**именно логин, не e-mail и не user_id** — API принимает только логин; ID пользователя возвращается как результат `sape.login`, а не передаётся) |
+| `SAPE_TOKEN` | да | — | API-токен с https://passport.sape.ru/security/token/ (активен один на аккаунт) |
+| `SAPE_API_URL` | нет | `https://api.sape.ru/xmlrpc/` | адрес API |
+| `SAPE_MAX_CALLS_PER_MINUTE` | нет | `115` | троттлинг запросов (лимит sape.ru — 120) |
+| `SAPE_TRANSPORT` | нет | `stdio` | `stdio` или `streamable-http` (режим Docker) |
+| `SAPE_HOST` / `SAPE_PORT` | нет | `0.0.0.0` / `8000` | адрес HTTP-сервера в Docker-режиме |
+
 ### Hermes Agent
 
-Добавьте в конфигурацию MCP-серверов:
-
 ```yaml
-mcp:
-  servers:
-    sape:
-      command: sape-mcp
-      env:
-        SAPE_LOGIN: ваш_логин
-        SAPE_TOKEN: ваш_токен
+mcp_servers:
+  sape:
+    url: http://localhost:8080/mcp   # вариант A
+    # либо вариант B:
+    # command: sape-mcp
+    # env: { SAPE_LOGIN: "...", SAPE_TOKEN: "..." }
 ```
 
 ## Инструменты

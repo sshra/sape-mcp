@@ -9,7 +9,12 @@ services:
     container_name: sape-mcp
     restart: unless-stopped
     env_file:
-      - ../.env            # SAPE_LOGIN и SAPE_TOKEN
+      # приоритет: docker/.env перекрывает ../.env; отсутствующие файлы не мешают запуску
+      # (required: false — нужна поддержка Docker Compose v2.24+; в старых версиях файлы должны существовать оба)
+      - path: ../.env
+        required: false
+      - path: ./.env
+        required: false
     environment:
       SAPE_TRANSPORT: streamable-http
       SAPE_HOST: 0.0.0.0
