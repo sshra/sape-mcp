@@ -96,6 +96,45 @@ mcp:
 - Покупка ссылок расходует реальные средства: используйте `max_price` для ограничения цены, а бюджет — инструмент `get_balance`.
 - API sape.ru ограничен 120 запросами/мин на аккаунт; сервер троттлит на 115.
 
+## Запуск в Docker (независимый контейнер)
+
+```bash
+cp .env.example .env   # или создайте .env: SAPE_LOGIN, SAPE_TOKEN
+docker compose up -d
+```
+
+Сервер поднимется в режиме streamable-http, MCP-endpoint: `http://localhost:8080/mcp`.
+
+Подключение клиентов, поддерживающих удалённые MCP-серверы:
+
+```json
+{
+  "mcpServers": {
+    "sape": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
+```
+
+Для клиентов, которые умеют только stdio, контейнер можно использовать без compose-сети:
+
+```json
+{
+  "mcpServers": {
+    "sape": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "--env-file", "/путь/к/.env", "sape-mcp"],
+      "env": { "SAPE_TRANSPORT": "stdio" }
+    }
+  }
+}
+```
+
+(образ собирается один раз: `docker build -t sape-mcp .`)
+
+Логи: `docker compose logs -f sape-mcp`.
+
 ## Разработка
 
 ```bash

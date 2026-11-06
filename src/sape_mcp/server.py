@@ -184,7 +184,20 @@ def sape_call(
 
 
 def main() -> None:
-    mcp.run()
+    """Запуск сервера: stdio (по умолчанию) или HTTP в Docker.
+
+    SAPE_TRANSPORT=stdio (по умолчанию) | streamable-http
+    SAPE_HOST / SAPE_PORT — адрес HTTP-сервера (по умолчанию 0.0.0.0:8000).
+    """
+    transport = os.environ.get("SAPE_TRANSPORT", "stdio").strip().lower()
+    if transport == "stdio":
+        mcp.run()
+    elif transport in ("streamable-http", "http", "streamable_http"):
+        mcp.settings.host = os.environ.get("SAPE_HOST", "0.0.0.0")
+        mcp.settings.port = int(os.environ.get("SAPE_PORT", "8000"))
+        mcp.run(transport="streamable-http")
+    else:
+        raise ValueError(f"Неизвестный SAPE_TRANSPORT: {transport}")
 
 
 if __name__ == "__main__":

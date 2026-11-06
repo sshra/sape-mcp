@@ -1,0 +1,19 @@
+services:
+  sape-mcp:
+    build: .
+    container_name: sape-mcp
+    restart: unless-stopped
+    env_file:
+      - .env            # SAPE_LOGIN и SAPE_TOKEN
+    environment:
+      SAPE_TRANSPORT: streamable-http
+      SAPE_HOST: 0.0.0.0
+      SAPE_PORT: 8000
+    ports:
+      - "8080:8000"     # MCP endpoint: http://localhost:8080/mcp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1', 8000), 3); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
