@@ -105,7 +105,7 @@ pip install .
 }
 ```
 
-(образ собирается один раз: `docker build -t sape-mcp https://github.com/sshra/sape-mcp.git#main:docker`)
+(образ собирается один раз: `docker build -t sape-mcp https://github.com/sshra/sape-mcp.git#master:docker`)
 
 ### Переменные окружения
 
@@ -165,7 +165,7 @@ Docker-файлы живут в папке [docker/](docker/) и собираю�
 Вариант 1 — одной командой (контекст сборки — git-репозиторий):
 
 ```bash
-docker build -t sape-mcp https://github.com/sshra/sape-mcp.git#main:docker
+docker build -t sape-mcp https://github.com/sshra/sape-mcp.git#master:docker
 ```
 
 Вариант 2 — через compose (нужен только .env рядом с папкой docker):
