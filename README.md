@@ -98,9 +98,20 @@ mcp:
 
 ## Запуск в Docker (независимый контейнер)
 
+Docker-файлы живут в папке [docker/](docker/) и собирают образ **из этого репозитория** — локальные исходники не нужны.
+
+Вариант 1 — одной командой (контекст сборки — git-репозиторий):
+
 ```bash
-cp .env.example .env   # или создайте .env: SAPE_LOGIN, SAPE_TOKEN
-docker compose up -d
+docker build -t sape-mcp https://github.com/sshra/sape-mcp.git#main:docker
+```
+
+Вариант 2 — через compose (нужен только .env рядом с папкой docker):
+
+```bash
+git clone https://github.com/sshra/sape-mcp.git && cd sape-mcp
+cp .env.example .env    # заполнить SAPE_LOGIN и SAPE_TOKEN
+docker compose -f docker/docker-compose.yml up -d
 ```
 
 Сервер поднимется в режиме streamable-http, MCP-endpoint: `http://localhost:8080/mcp`.
@@ -131,7 +142,7 @@ docker compose up -d
 }
 ```
 
-(образ собирается один раз: `docker build -t sape-mcp .`)
+(образ собирается один раз: `docker build -t sape-mcp .` — либо вариант 1 выше: сборка напрямую из GitHub)
 
 Логи: `docker compose logs -f sape-mcp`.
 

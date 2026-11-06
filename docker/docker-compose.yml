@@ -1,16 +1,21 @@
+# Запуск: cp ../.env.example ../.env (заполнить ключи) && docker compose up -d
+# MCP endpoint: http://localhost:8080/mcp
 services:
   sape-mcp:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sape-mcp:latest
     container_name: sape-mcp
     restart: unless-stopped
     env_file:
-      - .env            # SAPE_LOGIN и SAPE_TOKEN
+      - ../.env            # SAPE_LOGIN и SAPE_TOKEN
     environment:
       SAPE_TRANSPORT: streamable-http
       SAPE_HOST: 0.0.0.0
       SAPE_PORT: 8000
     ports:
-      - "8080:8000"     # MCP endpoint: http://localhost:8080/mcp
+      - "8080:8000"
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1', 8000), 3); s.close()"]
       interval: 30s
