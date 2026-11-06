@@ -26,6 +26,21 @@ class SapeError(Exception):
         super().__init__(f"[{code}] {message}")
 
 
+def sanitize(value: Any) -> Any:
+    """Привести XML-RPC-спецтипы (DateTime, Binary, bytes) к JSON-сериализуемым."""
+    if isinstance(value, xmlrpc.client.DateTime):
+        return str(value)  # ISO8601-строка из ответа API
+    if isinstance(value, xmlrpc.client.Binary):
+        return value.data.decode("utf-8", "replace")
+    if isinstance(value, bytes):
+        return value.decode("utf-8", "replace")
+    if isinstance(value, dict):
+        return {k: sanitize(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [sanitize(v) for v in value]
+    return value
+
+
 class _RateLimiter:
     """Окно на 60 секунд: не более лимита запросов."""
 
@@ -57,7 +72,7 @@ class _CookieTransport:
         self._cookies = cookies
         self._client = httpx.Client(timeout=timeout, follow_redirects=True)
 
-    def request(self, host: str, handler: str, request_body: bytes, verbose: bool = False) -> bytes:
+    def request(self, host: str, handler: str, request_body: bytes, verbose: bool = False) -> Any:
         response = self._client.post(
             self._url,
             content=request_body,
@@ -67,10 +82,17 @@ class _CookieTransport:
             },
             cookies=self._cookies,
         )
-        response.raise_for_status()
         # API sape.ru возвращает cookies сессии — сохраняем их.
         self._cookies.update(response.cookies)
-        return response.content
+        if response.status_code != 200:
+            raise xmlrpc.client.ProtocolError(self._url, response.status_code, response.reason_phrase, dict(response.headers))
+        # Кастомный транспорт обязан сам разобрать XML-RPC-ответ:
+        # ServerProxy возвращает результат request() без дополнительного парсинга.
+        unmarshaller = xmlrpc.client.Unmarshaller()
+        parser = xmlrpc.client.ExpatParser(unmarshaller)
+        parser.feed(response.content)
+        parser.close()
+        return unmarshaller.close()
 
     def close(self) -> None:
         self._client.close()
@@ -111,7 +133,7 @@ class SapeClient:
             return
         # login() вызывается напрямую, без рекурсии через call().
         self._limiter.acquire()
-        result = self._proxy.sape.login(self._login, self._token)
+        result = sanitize(self._proxy.sape.login(self._login, self._token))
         self._logged_in = True
         return result
 
@@ -129,7 +151,7 @@ class SapeClient:
                 target: Any = self._proxy
                 for part in full_method.split("."):
                     target = getattr(target, part)
-                return target(*params)
+                return sanitize(target(*params))
             except xmlrpc.client.Fault as exc:
                 if 600 <= exc.faultCode < 700 and attempt == 1:
                     self._logged_in = False
